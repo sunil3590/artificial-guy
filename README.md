@@ -2,8 +2,8 @@
 ### Given a story, performs Natural Language Processing and builds a Knowledge Representation graph. The graph is then used to answer user questions on the story.
 
 #### Technologies
-1. Stanford CoreNLP
-2. Neo4j
+1. Stanford CoreNLP - used to perform NLP on the user story.
+2. Neo4j - used to store and query knowledge graph
 
 #### NLP
 1. Co reference resolution
