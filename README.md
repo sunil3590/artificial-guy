@@ -4,3 +4,9 @@
 #### Technologies
 1. Stanford CoreNLP
 2. Neo4j
+
+#### NLP
+1. Co reference resolution
+2. POS tagging
+3. Entity extraction
+4. Dependency parser
