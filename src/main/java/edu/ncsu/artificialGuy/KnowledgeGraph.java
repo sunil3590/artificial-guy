@@ -3,6 +3,7 @@ package edu.ncsu.artificialGuy;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -35,16 +36,37 @@ public class KnowledgeGraph {
 		registerShutdownHook(graphDb);
 	}
 
-	public void addNode(String word) {
+	public boolean addNode(String entity) {
+		return addNode(entity, null, null);
+	}
+	
+	public boolean addNode(String entity, String pos) {
+		return addNode(entity, pos, null);
+	}
+	
+	public boolean addNode(String entity, String pos, String type) {
+		
+		if (entity == null) {
+			return false;
+		}
+		
 		Node node;
 		try (Transaction tx = graphDb.beginTx()) {
 			// Database operations go here
 			node = graphDb.createNode();
-			node.setProperty("entity", word);
+			node.setProperty("entity", entity);
+			if(pos != null) {
+				node.addLabel(DynamicLabel.label(pos));	
+			}
+			if(type != null) {
+				node.addLabel(DynamicLabel.label(type));	
+			}			
 
 			// transaction complete
 			tx.success();
 		}
+		
+		return true;
 	}
 
 	public void terminate() {

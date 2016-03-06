@@ -1,22 +1,8 @@
 package edu.ncsu.artificialGuy;
 
-import java.util.Scanner;
-import java.util.Set;
+import java.util.List;
 
 public class ArtificialGuy {
-
-	// TODO : mid-term submission
-	// Knowledge Representation
-	//		NLP
-	//			co-reference resolution
-	//			POS
-	//			NER tagging
-	//			dependency parse
-	//		Build KR
-	//			Nouns
-	//			Verbs
-	//			Relationships
-	//			Attributes (adjectives, adverbs, etc)
 	
 	// TODO : post mid-term
 	// Q/A
@@ -46,27 +32,19 @@ public class ArtificialGuy {
 		System.out.println("##################################################################\n");
 
 		// class to build a knowledge graph
-		KnowledgeGraph kr = new KnowledgeGraph("jdbc:neo4j://localhost:7474/", "neo4j", "megaton119");
+		KnowledgeGraph kr = new KnowledgeGraph("jdbc:neo4j://localhost:7474/", "neo4j", "NEO4J");
 
 		// extract from story and build a KR
-		Set<String> entities = storyProc.getEntities();
+		List<String> entities = storyProc.getEntities();
 		
 		// add entities to KR
 		for (String entity : entities) {
-			kr.addNode(entity);
+			String parts[] = entity.split("/");
+			// TODO : do we need all NER and POS tags in KR?
+			kr.addNode(parts[0], parts[1], parts[2]);
 		}
 		
-		// question answering session
-		Scanner sc = new Scanner(System.in);
-		while (true) {
-			// User question
-			System.out.print("Enter question (or \"quit\") > ");
-			String question = sc.nextLine();
-			if (question.equals("quit")) {
-				sc.close();
-				break;
-			}
-		}
+		// TODO : question answering session
 		
 		// terminate before exit
 		kr.terminate();
