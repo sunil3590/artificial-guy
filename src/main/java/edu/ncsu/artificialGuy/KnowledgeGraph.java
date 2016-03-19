@@ -50,6 +50,7 @@ public class KnowledgeGraph {
 			return false;
 		}
 		
+		// TODO : check for duplicate nodes
 		Node node;
 		try (Transaction tx = graphDb.beginTx()) {
 			// Database operations go here

@@ -9,4 +9,5 @@
 1. Co reference resolution
 2. POS tagging
 3. Entity extraction
-4. Dependency parser
+4. Stemming
+5. Dependency parser

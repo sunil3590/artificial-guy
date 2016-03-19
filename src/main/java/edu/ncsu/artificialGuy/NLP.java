@@ -7,11 +7,11 @@ import java.util.Properties;
 
 import edu.stanford.nlp.dcoref.CorefChain;
 import edu.stanford.nlp.dcoref.CorefChain.CorefMention;
-import edu.stanford.nlp.dcoref.CorefCoreAnnotations;
 import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefChainAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefClusterIdAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.NamedEntityTagAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.SentenceIndexAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.TextAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
@@ -59,9 +59,9 @@ public class NLP {
 
 	public List<String> tagTokens(String text) {
 
-		Annotation document = runPipeline(text);
-
 		List<String> tagged = new ArrayList<String>();
+
+		Annotation document = runPipeline(text);
 
 		// these are all the sentences in this document
 		// a CoreMap is essentially a Map that uses class objects as keys
@@ -78,7 +78,7 @@ public class NLP {
 				String pos = token.get(PartOfSpeechAnnotation.class);
 				// this is the NER label of the token
 				String ne = token.get(NamedEntityTagAnnotation.class);
-				
+
 				tagged.add(word + "/" + pos + "/" + ne);
 			}
 
@@ -89,50 +89,59 @@ public class NLP {
 
 	public String resolveCoRef(String text) {
 
-		Annotation doc = runPipeline(text);
-
-		Map<Integer, CorefChain> corefs = doc.get(CorefChainAnnotation.class);
-		List<CoreMap> sentences = doc.get(CoreAnnotations.SentencesAnnotation.class);
-
 		String resolved = new String();
+
+		Annotation document = runPipeline(text);
+
+		Map<Integer, CorefChain> corefs = document.get(CorefChainAnnotation.class);
+		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
 
 		for (CoreMap sentence : sentences) {
 
-			List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
-			int curSentIdx = sentence.get(CoreAnnotations.SentenceIndexAnnotation.class);
+			int curSentIdx = sentence.get(SentenceIndexAnnotation.class);
 
-			for (CoreLabel token : tokens) {
+			for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
 
-				Integer corefClustId = token.get(CorefCoreAnnotations.CorefClusterIdAnnotation.class);
+				Integer corefClustId = token.get(CorefClusterIdAnnotation.class);
 				CorefChain chain = corefs.get(corefClustId);
 
+				// if there is no chain to replace
 				if (chain == null || chain.getMentionsInTextualOrder().size() == 1) {
 					resolved += token.word() + " ";
 				} else {
 
 					int sentIndx = chain.getRepresentativeMention().sentNum - 1;
-					CoreMap corefSentence = sentences.get(sentIndx);
-					List<CoreLabel> corefSentenceTokens = corefSentence.get(TokensAnnotation.class);
+					CoreMap corefSent = sentences.get(sentIndx);
+					List<CoreLabel> corefSentToks = corefSent.get(TokensAnnotation.class);
 
 					System.out.println(token.word() + " --> corefClusterID = " + corefClustId);
-					System.out.println("matched chain = " + chain);
+					System.out.println("Matched chain = " + chain);
 
 					String newwords = new String();
 					CorefMention reprMent = chain.getRepresentativeMention();
-					System.out.println(reprMent);
-					System.out.println(token.index());
+					boolean replaced = false;
 					if (curSentIdx != sentIndx || token.index() < reprMent.startIndex
 							|| token.index() > reprMent.endIndex) {
 
 						for (int i = reprMent.startIndex; i < reprMent.endIndex; i++) {
-							CoreLabel matchedLabel = corefSentenceTokens.get(i - 1);
-							resolved += matchedLabel.word() + " ";
-							newwords += matchedLabel.word() + " ";
+							CoreLabel matchedLabel = corefSentToks.get(i - 1);
+							String pos = matchedLabel.get(PartOfSpeechAnnotation.class);
+							if (pos.matches("N.*")) {
+								resolved += matchedLabel.word() + " ";
+								newwords += matchedLabel.word() + " ";
+								replaced = true;
+							}
 						}
 
-						System.out.println("converting " + token.word() + " to " + newwords + "\n");
+						if (replaced == false) {
+							resolved += token.word() + " ";
+							System.out.println("\n");
+						} else {
+							System.out.println("Converting " + token.word() + " TO " + newwords + "\n");	
+						}
 					} else {
 						resolved += token.word() + " ";
+						System.out.println("\n");
 					}
 				}
 			}

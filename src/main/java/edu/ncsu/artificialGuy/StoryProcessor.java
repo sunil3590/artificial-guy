@@ -15,6 +15,7 @@ public class StoryProcessor {
 	//			co-reference resolution
 	//			POS
 	//			NER tagging
+	//			stemming
 	//			dependency parse
 	//		Build KR
 	//			Nouns
@@ -60,7 +61,7 @@ public class StoryProcessor {
 		
 		// perform all NLP on text
 		nlp = NLP.getInstance();
-		performNLP();
+		nlpPreprocess();
 	}
 
 	public String getText() {
@@ -71,10 +72,10 @@ public class StoryProcessor {
 		return entities;
 	}
 	
-	private void performNLP() {
+	private void nlpPreprocess() {
 		// resolve co reference
 		coRefText = new String(nlp.resolveCoRef(orgText));
-		System.out.println(coRefText);
+		System.out.println(coRefText.replace(". ", ".\n"));
 		
 		// entity extraction
 		entities = new ArrayList<String>(nlp.tagTokens(coRefText));
