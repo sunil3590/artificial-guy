@@ -32,41 +32,46 @@ public class KnowledgeGraph {
 		}
 
 		this.graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(db_path);
-		
+
 		registerShutdownHook(graphDb);
 	}
 
 	public boolean addNode(String entity) {
 		return addNode(entity, null, null);
 	}
-	
+
 	public boolean addNode(String entity, String pos) {
 		return addNode(entity, pos, null);
 	}
-	
+
 	public boolean addNode(String entity, String pos, String type) {
-		
+
 		if (entity == null) {
 			return false;
 		}
-		
-		// TODO : check for duplicate nodes
+
 		Node node;
 		try (Transaction tx = graphDb.beginTx()) {
+			// check for duplicate nodes
+			Node oldNode = graphDb.findNode(DynamicLabel.label(pos), "entity", entity);
+			if (oldNode != null) {
+				return true;
+			}
+			
 			// Database operations go here
 			node = graphDb.createNode();
 			node.setProperty("entity", entity);
-			if(pos != null) {
-				node.addLabel(DynamicLabel.label(pos));	
+			if (pos != null) {
+				node.addLabel(DynamicLabel.label(pos));
 			}
-			if(type != null) {
-				node.addLabel(DynamicLabel.label(type));	
-			}			
+			if (type != null) {
+				node.addLabel(DynamicLabel.label(type));
+			}
 
 			// transaction complete
 			tx.success();
 		}
-		
+
 		return true;
 	}
 

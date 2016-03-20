@@ -16,8 +16,11 @@ import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.TextAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.BasicDependenciesAnnotation;
 import edu.stanford.nlp.util.CoreMap;
 
 public class NLP {
@@ -43,7 +46,8 @@ public class NLP {
 	private static void loadModels() {
 
 		Properties props = new Properties();
-		props.put("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
+		props.put("annotators", "tokenize, ssplit, pos, lemma, ner, depparse, parse, dcoref");
+		props.put("enforceRequirements", false);
 		pipeline = new StanfordCoreNLP(props);
 	}
 
@@ -112,36 +116,23 @@ public class NLP {
 
 					int sentIndx = chain.getRepresentativeMention().sentNum - 1;
 					CoreMap corefSent = sentences.get(sentIndx);
-					List<CoreLabel> corefSentToks = corefSent.get(TokensAnnotation.class);
+					SemanticGraph dep = corefSent.get(BasicDependenciesAnnotation.class);
+					List<IndexedWord> topSortWords = dep.topologicalSort();
 
-					System.out.println(token.word() + " --> corefClusterID = " + corefClustId);
-					System.out.println("Matched chain = " + chain);
-
-					String newwords = new String();
 					CorefMention reprMent = chain.getRepresentativeMention();
-					boolean replaced = false;
+					String rootWord = null;
+					for (IndexedWord word : topSortWords) {
+						if (word.index() >= reprMent.startIndex && word.index() <= reprMent.endIndex) {
+							rootWord = word.originalText();
+							break;
+						}
+					}
+
 					if (curSentIdx != sentIndx || token.index() < reprMent.startIndex
 							|| token.index() > reprMent.endIndex) {
-
-						for (int i = reprMent.startIndex; i < reprMent.endIndex; i++) {
-							CoreLabel matchedLabel = corefSentToks.get(i - 1);
-							String pos = matchedLabel.get(PartOfSpeechAnnotation.class);
-							if (pos.matches("N.*")) {
-								resolved += matchedLabel.word() + " ";
-								newwords += matchedLabel.word() + " ";
-								replaced = true;
-							}
-						}
-
-						if (replaced == false) {
-							resolved += token.word() + " ";
-							System.out.println("\n");
-						} else {
-							System.out.println("Converting " + token.word() + " TO " + newwords + "\n");	
-						}
+						resolved += rootWord + " ";
 					} else {
 						resolved += token.word() + " ";
-						System.out.println("\n");
 					}
 				}
 			}
