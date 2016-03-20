@@ -93,6 +93,10 @@ public class NLP {
 
 	public String resolveCoRef(String text) {
 
+		// TODO :
+		//		maintain spacing
+		//		maintain capitalization
+
 		String resolved = new String();
 
 		Annotation document = runPipeline(text);
@@ -103,8 +107,9 @@ public class NLP {
 		for (CoreMap sentence : sentences) {
 
 			int curSentIdx = sentence.get(SentenceIndexAnnotation.class);
+			List<CoreLabel> tokens = sentence.get(TokensAnnotation.class);
 
-			for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
+			for (CoreLabel token : tokens) {
 
 				Integer corefClustId = token.get(CorefClusterIdAnnotation.class);
 				CorefChain chain = corefs.get(corefClustId);

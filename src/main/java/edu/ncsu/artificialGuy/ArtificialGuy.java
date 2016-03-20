@@ -35,14 +35,10 @@ public class ArtificialGuy {
 		KnowledgeGraph kr = new KnowledgeGraph("jdbc:neo4j://localhost:7474/", "neo4j", "NEO4J");
 
 		// extract from story and build a KR
-		List<String> entities = storyProc.getEntities();
+		List<String> tokens = storyProc.getTokens();
 		
-		// add entities to KR
-		for (String entity : entities) {
-			String parts[] = entity.split("/");
-			// TODO : do we need all NER and POS tags in KR?
-			kr.addNode(parts[0], parts[1], parts[2]);
-		}
+		// add tokens to KR
+		kr.addTokens(tokens);
 		
 		// TODO : question answering session
 		

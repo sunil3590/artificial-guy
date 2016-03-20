@@ -68,7 +68,7 @@ public class StoryProcessor {
 		return orgText;
 	}
 	
-	public List<String> getEntities() {
+	public List<String> getTokens() {
 		return entities;
 	}
 	

@@ -2,6 +2,7 @@ package edu.ncsu.artificialGuy;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -36,15 +37,7 @@ public class KnowledgeGraph {
 		registerShutdownHook(graphDb);
 	}
 
-	public boolean addNode(String entity) {
-		return addNode(entity, null, null);
-	}
-
-	public boolean addNode(String entity, String pos) {
-		return addNode(entity, pos, null);
-	}
-
-	public boolean addNode(String entity, String pos, String type) {
+	private boolean addNode(String entity, String pos, String type) {
 
 		if (entity == null) {
 			return false;
@@ -75,6 +68,15 @@ public class KnowledgeGraph {
 		return true;
 	}
 
+	public void addTokens(List<String> tokens) {
+		for (String token : tokens) {
+			String parts[] = token.split("/");
+			// TODO : do we need all NER and POS tags in KR?
+			this.addNode(parts[0].toLowerCase(), parts[1], parts[2]);
+		}
+		
+	}
+	
 	public void terminate() {
 		System.out.println();
 		System.out.println("Shutting down database ...");
