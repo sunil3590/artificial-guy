@@ -7,26 +7,30 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.stanford.nlp.semgraph.SemanticGraph;
+
 public class StoryProcessor {
 	
 	// TODO : mid-term submission
 	// Knowledge Representation
 	//		NLP
-	//			co-reference resolution
-	//			POS
-	//			NER tagging
-	//			stemming
+	//			co-reference resolution		DONE
+	//			POS							DONE
+	//			NER tagging					DONE
+	//			stemming					DONE
 	//			dependency parse
 	//		Build KR
-	//			Nouns
-	//			Verbs
+	//			Remove stop words
+	//			Nouns						DONE
+	//			Verbs						DONE
 	//			Relationships
 	//			Attributes (adjectives, adverbs, etc)
 
 	private String filePath;
 	private String orgText;
 	private String coRefText;
-	private List<String> entities;
+	private List<String> tokens;
+	private List<SemanticGraph> depGraphs;
 	
 	private NLP nlp;
 
@@ -69,7 +73,11 @@ public class StoryProcessor {
 	}
 	
 	public List<String> getTokens() {
-		return entities;
+		return tokens;
+	}
+	
+	public List<SemanticGraph> getDepGraphs() {
+		return depGraphs;
 	}
 	
 	private void nlpPreprocess() {
@@ -77,8 +85,11 @@ public class StoryProcessor {
 		coRefText = new String(nlp.resolveCoRef(orgText));
 		System.out.println(coRefText.replace(". ", ".\n"));
 		
-		// entity extraction
-		entities = new ArrayList<String>(nlp.tagTokens(coRefText));
-		System.out.println(entities);
+		// token processor
+		tokens = new ArrayList<String>(nlp.tagTokens(coRefText));
+		System.out.println(tokens);
+		
+		// dependency parser
+		depGraphs = nlp.getDependencies(coRefText);
 	}
 }

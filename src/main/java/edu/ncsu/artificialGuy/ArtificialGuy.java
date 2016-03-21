@@ -1,6 +1,10 @@
 package edu.ncsu.artificialGuy;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 
 public class ArtificialGuy {
 	
@@ -26,19 +30,49 @@ public class ArtificialGuy {
 		StoryProcessor storyProc = new StoryProcessor(args[0]);
 		
 		// display the story
-		System.out.println("Here's how the story goes");
-		System.out.println("\n##################################################################");
+		System.out.println("\n######################## ORIGINAL STORY ##########################");
 		System.out.println(storyProc.getText().replace(". ", "\n"));
 		System.out.println("##################################################################\n");
 
 		// class to build a knowledge graph
-		KnowledgeGraph kr = new KnowledgeGraph("jdbc:neo4j://localhost:7474/", "neo4j", "NEO4J");
+		KnowledgeGraph kr = new KnowledgeGraph();
 
-		// extract from story and build a KR
+		// extract tokens from story
 		List<String> tokens = storyProc.getTokens();
 		
+		// tokens to be added to KR
+		List<String> nodeTokens = new ArrayList<String>();
+		for (String token : tokens) {
+			String parts[] = token.split("/");
+			// TODO : which POS needs to be a node in KR?
+			// all types of noun and verb
+			if (parts[1].matches("N.*") || parts[1].matches("V.*")) {
+				nodeTokens.add(token);
+			}
+		}
+		
 		// add tokens to KR
-		kr.addTokens(tokens);
+		kr.addTokens(nodeTokens);
+		
+		// relationships to be added to KR
+		List<SemanticGraph> depGraphs = storyProc.getDepGraphs();
+		
+		// TODO : add relationships to KR
+		for (SemanticGraph depGraph : depGraphs) {
+			Iterable<SemanticGraphEdge> edges = depGraph.edgeIterable();
+			for (SemanticGraphEdge edge : edges) {
+				String srcToken = edge.getSource().lemma();
+				String dstToken = edge.getTarget().lemma();
+				String srcPos = edge.getSource().tag();
+				String dstPos = edge.getTarget().tag();
+				String srcType = edge.getSource().ner();
+				String dstType = edge.getTarget().ner();
+				if ((srcPos.matches("N.*") || srcPos.matches("V.*")) && 
+						(dstPos.matches("N.*") || dstPos.matches("V.*"))) {
+					kr.addRelation(srcToken, srcPos, srcType, dstToken, dstPos, dstType);
+				}
+			}
+		}
 		
 		// TODO : question answering session
 		

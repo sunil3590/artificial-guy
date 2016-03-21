@@ -9,6 +9,7 @@ import edu.stanford.nlp.dcoref.CorefChain;
 import edu.stanford.nlp.dcoref.CorefChain.CorefMention;
 import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefChainAnnotation;
 import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefClusterIdAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.LemmaAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.NamedEntityTagAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.SentenceIndexAnnotation;
@@ -82,8 +83,10 @@ public class NLP {
 				String pos = token.get(PartOfSpeechAnnotation.class);
 				// this is the NER label of the token
 				String ne = token.get(NamedEntityTagAnnotation.class);
+				// this is the lemma of the token
+				String lemma = token.get(LemmaAnnotation.class);
 
-				tagged.add(word + "/" + pos + "/" + ne);
+				tagged.add(word + "/" + pos + "/" + ne + "/" + lemma);
 			}
 
 		}
@@ -144,6 +147,16 @@ public class NLP {
 		}
 
 		return resolved;
+	}
+	
+	public List<SemanticGraph> getDependencies(String text) {
 
+		Annotation document = runPipeline(text);
+		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
+		List<SemanticGraph> depGraphs = new ArrayList<SemanticGraph>();
+		for (CoreMap sentence : sentences) {
+			depGraphs.add(sentence.get(BasicDependenciesAnnotation.class));
+		}
+		return depGraphs;
 	}
 }
