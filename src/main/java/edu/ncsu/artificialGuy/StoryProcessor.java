@@ -11,20 +11,20 @@ import edu.stanford.nlp.semgraph.SemanticGraph;
 
 public class StoryProcessor {
 	
-	// TODO : mid-term submission
+	// mid-term submission
 	// Knowledge Representation
 	//		NLP
 	//			co-reference resolution		DONE
 	//			POS							DONE
 	//			NER tagging					DONE
 	//			stemming					DONE
-	//			dependency parse
+	//			dependency parse			DONE
 	//		Build KR
 	//			Remove stop words
 	//			Nouns						DONE
 	//			Verbs						DONE
-	//			Relationships
-	//			Attributes (adjectives, adverbs, etc)
+	//			Relationships				DONE
+	//			Attributes (ADJ, ADV)		DONE
 
 	private String filePath;
 	private String orgText;
@@ -72,6 +72,10 @@ public class StoryProcessor {
 		return orgText;
 	}
 	
+	public String getCorefText() {
+		return coRefText;
+	}
+	
 	public List<String> getTokens() {
 		return tokens;
 	}
@@ -83,11 +87,9 @@ public class StoryProcessor {
 	private void nlpPreprocess() {
 		// resolve co reference
 		coRefText = new String(nlp.resolveCoRef(orgText));
-		System.out.println(coRefText.replace(". ", ".\n"));
 		
 		// token processor
 		tokens = new ArrayList<String>(nlp.tagTokens(coRefText));
-		System.out.println(tokens);
 		
 		// dependency parser
 		depGraphs = nlp.getDependencies(coRefText);

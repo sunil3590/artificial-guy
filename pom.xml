@@ -66,7 +66,8 @@
 				<configuration>
 					<mainClass>edu.ncsu.artificialGuy.ArtificialGuy</mainClass>
 					<arguments>
-						<argument>./input/fox_grapes.txt</argument>
+						<argument>./input/owl.txt</argument>
+						<argument>../neo4j-community-2.3.2/data/graph.db</argument>
 					</arguments>
 				</configuration>
 			</plugin>

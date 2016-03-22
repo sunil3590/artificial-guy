@@ -22,6 +22,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.BasicDependenciesAnnotation;
+import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation;
 import edu.stanford.nlp.util.CoreMap;
 
 public class NLP {
@@ -97,8 +98,8 @@ public class NLP {
 	public String resolveCoRef(String text) {
 
 		// TODO :
-		//		maintain spacing
-		//		maintain capitalization
+		// maintain spacing
+		// maintain capitalization
 
 		String resolved = new String();
 
@@ -148,15 +149,16 @@ public class NLP {
 
 		return resolved;
 	}
-	
+
 	public List<SemanticGraph> getDependencies(String text) {
 
 		Annotation document = runPipeline(text);
 		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
 		List<SemanticGraph> depGraphs = new ArrayList<SemanticGraph>();
 		for (CoreMap sentence : sentences) {
-			depGraphs.add(sentence.get(BasicDependenciesAnnotation.class));
+			depGraphs.add(sentence.get(CollapsedCCProcessedDependenciesAnnotation.class));
 		}
+
 		return depGraphs;
 	}
 }

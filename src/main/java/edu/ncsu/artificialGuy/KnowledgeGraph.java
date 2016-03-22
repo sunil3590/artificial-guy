@@ -14,37 +14,38 @@ import org.neo4j.io.fs.FileUtils;
 
 public class KnowledgeGraph {
 
-	private static final String db_path = "/media/windows/Users/Sunil/Everything/EOS"
-			+ "/neo4j-community-2.3.2/data/graph.db";
+	private String db_path = null;
 	private GraphDatabaseService graphDb;
 
 	@SuppressWarnings("deprecation")
-	public KnowledgeGraph() {
+	public KnowledgeGraph(String db_path) {
+		
+		this.db_path = new String(db_path);
 
 		// create a neo4j database
 		try {
-			FileUtils.deleteRecursively(new File(db_path));
+			FileUtils.deleteRecursively(new File(this.db_path));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
-		this.graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(db_path);
+		this.graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(this.db_path);
 
 		registerShutdownHook(graphDb);
 	}
 
-	private boolean addNode(String token, String pos, String type) {
+	private boolean addNode(String token, String pos, String type) throws Exception {
 
 		if (token == null || pos == null || type == null) {
-			return false;
+			throw new Exception("Invalid arguments");
 		}
-
+ 
 		Node node;
 		try (Transaction tx = graphDb.beginTx()) {
 			// check for duplicate nodes
 			Node oldNode = getNode(token, pos, type);
 			if (oldNode != null) {
-				return true;
+				return false;
 			}
 
 			// Database operations go here
@@ -64,17 +65,16 @@ public class KnowledgeGraph {
 		return true;
 	}
 
-	public void addTokens(List<String> tokens) {
+	public int addTokens(List<String> tokens) throws Exception {
+		int count = 0;
 		for (String token : tokens) {
 			String parts[] = token.split("/");
 
-			if (parts[1].matches("N.*") || parts[1].matches("V.*")) {
-				boolean status = this.addNode(parts[3].toLowerCase(), parts[1], parts[2]);
-				if (status == false) {
-					System.out.println("Failed to add node : " + token);
-				}
-			}
+			boolean status = this.addNode(parts[3].toLowerCase(), parts[1], parts[2]);
+			if (status == true)
+				count++;
 		}
+		return count;
 	}
 	
 	public Node getNode(String token, String pos, String type) {
@@ -90,7 +90,7 @@ public class KnowledgeGraph {
 	}
 
 	public boolean addRelation(String srcToken, String srcPos, String srcType, 
-			String dstToken, String dstPos, String dstType) {
+			String dstToken, String dstPos, String dstType, String reln) {
 
 		if (srcToken == null || dstToken == null) {
 			return false;
@@ -107,7 +107,60 @@ public class KnowledgeGraph {
 				return false;
 			}
 
-			srcNode.createRelationshipTo(dstNode, KRRelnTypes.UNKNOWN);
+			// TODO : handle all types of relations
+			KRRelnTypes relnType;
+			switch (reln) {
+			case "acomp":
+				relnType = KRRelnTypes.ACOMP;
+				break;
+			case "advmod":
+				relnType = KRRelnTypes.ADVMOD;
+				break;
+			case "amod":
+				relnType = KRRelnTypes.AMOD;
+				break;
+			case "conj":
+				relnType = KRRelnTypes.CONJ;
+				break;
+			case "dobj":
+				relnType = KRRelnTypes.DOBJ;
+				break;
+			case "iobj":
+				relnType = KRRelnTypes.IOBJ;
+				break;
+			case "neg":
+				relnType = KRRelnTypes.NEG;
+				break;
+			case "nmod":
+				relnType = KRRelnTypes.NMOD;
+				break;
+			case "npadvmod":
+				relnType = KRRelnTypes.NPADVMOD;
+				break;
+			case "nsubj":
+				relnType = KRRelnTypes.NSUBJ;
+				break;
+			case "nsubjpass":
+				relnType = KRRelnTypes.NSUBJPASS;
+				break;
+			case "pobj":
+				relnType = KRRelnTypes.POBJ;
+				break;
+			case "poss":
+				relnType = KRRelnTypes.POSS;
+				break;
+			case "rcmod":
+				relnType = KRRelnTypes.RCMOD;
+				break;
+			case "xsubj":
+				relnType = KRRelnTypes.XSUBJ;
+				break;
+			default:
+				relnType = KRRelnTypes.UNKNOWN;
+				break;
+			}
+			
+			srcNode.createRelationshipTo(dstNode, relnType);	
 
 			// transaction complete
 			tx.success();
@@ -135,6 +188,21 @@ public class KnowledgeGraph {
 	}
 
 	enum KRRelnTypes implements RelationshipType {
+		ACOMP,
+		ADVMOD,
+		AMOD,
+		CONJ,
+		DOBJ,
+		IOBJ,
+		NEG,
+		NMOD,
+		NPADVMOD,
+		NSUBJ,
+		NSUBJPASS,
+		POBJ,
+		POSS,
+		RCMOD,
+		XSUBJ,
 		UNKNOWN
 	}
 }
