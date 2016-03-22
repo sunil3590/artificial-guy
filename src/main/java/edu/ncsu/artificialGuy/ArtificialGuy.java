@@ -41,7 +41,7 @@ public class ArtificialGuy {
 		System.out.println(storyProc.getCorefText().replace(". ", ".\n"));
 		System.out.println("##################################################################\n");
 		
-		// TODO : class to build a knowledge graph
+		// class to build a knowledge graph
 		KnowledgeGraph kr = new KnowledgeGraph(args[1]);
 
 		// extract tokens from story
@@ -52,7 +52,7 @@ public class ArtificialGuy {
 		List<String> nodeTokens = new ArrayList<String>();
 		for (String token : tokens) {
 			String parts[] = token.split("/");
-			// TODO : which POS needs to be a node in KR?
+			// TODO : figure out which POS make a node
 			// all types of nouns, verbs, adjectives, adverbs
 			if (parts[1].matches("N.*") || parts[1].matches("V.*") || parts[1].matches("JJ.*")
 					|| parts[1].matches("RB.*")) {
@@ -98,7 +98,7 @@ public class ArtificialGuy {
 		// terminate before exit
 		kr.terminate();
 
-		System.out.println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+		System.out.println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUMMARY ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 		System.out.println("Number of nodes added : " + numNodes);
 		System.out.println("Number of edges added : " + numEdges);
 		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");

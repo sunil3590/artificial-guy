@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.commons.lang3.text.WordUtils;
+
 import edu.stanford.nlp.dcoref.CorefChain;
 import edu.stanford.nlp.dcoref.CorefChain.CorefMention;
 import edu.stanford.nlp.dcoref.CorefCoreAnnotations.CorefChainAnnotation;
@@ -17,11 +19,9 @@ import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.TextAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
-import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.BasicDependenciesAnnotation;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation;
 import edu.stanford.nlp.util.CoreMap;
 
@@ -97,51 +97,56 @@ public class NLP {
 
 	public String resolveCoRef(String text) {
 
-		// TODO :
-		// maintain spacing
-		// maintain capitalization
-
+		// to hold resolved string
 		String resolved = new String();
 
+		// run the pipeline
 		Annotation document = runPipeline(text);
 
+		// get all coref chains and sentences
 		Map<Integer, CorefChain> corefs = document.get(CorefChainAnnotation.class);
 		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
 
+		// process each sentence
 		for (CoreMap sentence : sentences) {
 
 			int curSentIdx = sentence.get(SentenceIndexAnnotation.class);
 			List<CoreLabel> tokens = sentence.get(TokensAnnotation.class);
 
+			boolean isPronoun = false;
 			for (CoreLabel token : tokens) {
+
+				// process only pronouns
+				isPronoun = false;
+				String pos = token.get(PartOfSpeechAnnotation.class);
+				if (pos.equals("PRP") || pos.equals("PP$")) {
+					isPronoun = true;
+				}
 
 				Integer corefClustId = token.get(CorefClusterIdAnnotation.class);
 				CorefChain chain = corefs.get(corefClustId);
 
 				// if there is no chain to replace
-				if (chain == null || chain.getMentionsInTextualOrder().size() == 1) {
-					resolved += token.word() + " ";
+				if (chain == null || chain.getMentionsInTextualOrder().size() == 1 || isPronoun == false) {
+					resolved += token.word() + token.after();
 				} else {
 
 					int sentIndx = chain.getRepresentativeMention().sentNum - 1;
-					CoreMap corefSent = sentences.get(sentIndx);
-					SemanticGraph dep = corefSent.get(BasicDependenciesAnnotation.class);
-					List<IndexedWord> topSortWords = dep.topologicalSort();
 
 					CorefMention reprMent = chain.getRepresentativeMention();
-					String rootWord = null;
-					for (IndexedWord word : topSortWords) {
-						if (word.index() >= reprMent.startIndex && word.index() <= reprMent.endIndex) {
-							rootWord = word.originalText();
-							break;
-						}
-					}
+					String rootWord = sentences.get(sentIndx)
+							.get(TokensAnnotation.class)
+							.get(reprMent.headIndex - 1)
+							.originalText();
 
 					if (curSentIdx != sentIndx || token.index() < reprMent.startIndex
 							|| token.index() > reprMent.endIndex) {
-						resolved += rootWord + " ";
+						if (Character.isUpperCase(token.originalText().charAt(0))) {
+							rootWord = WordUtils.capitalize(rootWord);
+						}
+						resolved += rootWord + token.after();
 					} else {
-						resolved += token.word() + " ";
+						resolved += token.word() + token.after();
 					}
 				}
 			}
