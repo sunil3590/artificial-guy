@@ -160,7 +160,6 @@ public class KnowledgeGraph {
 	}
 
 	public void terminate() {
-		System.out.println();
 		System.out.println("Shutting down database ...");
 		graphDb.shutdown();
 	}

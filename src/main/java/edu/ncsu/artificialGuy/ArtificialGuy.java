@@ -1,5 +1,8 @@
 package edu.ncsu.artificialGuy;
 
+import java.io.File;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Scanner;
 
@@ -8,17 +11,31 @@ import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 
 public class ArtificialGuy {
 
-	// TODO : post mid-term
-	//		Q/A
-	//		Accept question
+	// mid-term
+	// Knowledge Representation
 	//		NLP
-	//		Query KR
-	//		NLG
-
+	//			co-reference resolution		DONE
+	//			POS							DONE
+	//			NER tagging					DONE
+	//			stemming					DONE
+	//			dependency parse			DONE
+	//		Build KR
+	//			Remove stop words			TODO
+	//			Nouns						DONE
+	//			Verbs						DONE
+	//			Relationships				DONE
+	//			Attributes (ADJ, ADV)		DONE
+	// post mid-term
+	// Q/A
+	//		Accept question					DONE
+	//		NLP								TODO
+	//		Query KR						TODO
+	//		NLG								TODO
+	
 	public static void main(String[] args) throws Exception {
 
 		if (args.length < 2) {
-			System.out.println("Usage : artificial-guy STORY_FILE_PATH NEO4J_DATA_FOLDER");			
+			System.out.println("Usage : artificial-guy STORY_FILE NEO4J_DATA_FOLDER");			
 		}
 
 		System.out.println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -27,25 +44,33 @@ public class ArtificialGuy {
 		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
 		System.out.println("Using story file : " + args[0] + "\n");
+		Path path = FileSystems.getDefault().getPath("input", "owl.txt");
+		File file = path.toFile();
 
 		// build a Story object
-		StoryProcessor storyProc = new StoryProcessor(args[0]);
+		Story story = new Story(file);
 
 		// display the original story
 		System.out.println("\n######################## ORIGINAL STORY ##########################");
-		System.out.println(storyProc.getText().replace(". ", ".\n"));
+		System.out.println(story.getText().replace(". ", ".\n"));
 		System.out.println("##################################################################\n");
+
+		// to perform any NLP operations required
+		NLP nlp = NLP.getInstance();
+		
+		// resolve co reference
+		String coRefText = nlp.resolveCoRef(story.getText());
 
 		// story after co reference resolution
 		System.out.println("\n################# AFTER COREFERENCE RESOLUTION ###################");
-		System.out.println(storyProc.getCorefText().replace(". ", ".\n"));
+		System.out.println(coRefText.replace(". ", ".\n"));
 		System.out.println("##################################################################\n");
 		
 		// class to build a knowledge graph
 		KnowledgeGraph kr = new KnowledgeGraph(args[1]);
 
 		// relationships to be added to KR
-		List<SemanticGraph> depGraphs = storyProc.getDepGraphs();
+		List<SemanticGraph> depGraphs = nlp.getDependencies(coRefText);
 
 		// add relationships and nodes to KR
 		int numEdges = 0;
@@ -93,6 +118,8 @@ public class ArtificialGuy {
 				sc.close();
 				break;
 			}
+			
+			
 		}
 
 		// terminate before exit
