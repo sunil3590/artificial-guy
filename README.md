@@ -1,5 +1,6 @@
 # artificial-guy
-### Given a story, performs Natural Language Processing and builds a Knowledge Representation graph. The graph is then used to answer user questions on the story.
+#### Knowledge representation and reasoning using graph
+Given a story in English, processes natural language and builds a knowledge graph. The knowledge graph and a resoning system are then used to answer questions asked in natural language.
 
 #### Technologies
 1. Stanford CoreNLP - used to perform NLP on the user story.
