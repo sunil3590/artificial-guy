@@ -2,7 +2,6 @@ package edu.ncsu.artificialGuy;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -22,19 +21,20 @@ public class KnowledgeGraph {
 		
 		this.db_path = new String(db_path);
 
-		// create a neo4j database
+		// delete data from previous runs
 		try {
 			FileUtils.deleteRecursively(new File(this.db_path));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
+		// create a neo4j database
 		this.graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(this.db_path);
 
 		registerShutdownHook(graphDb);
 	}
 
-	private boolean addNode(String token, String pos, String type) throws Exception {
+	private Node addNode(String token, String pos, String type, String sentId) throws Exception {
 
 		if (token == null || pos == null || type == null) {
 			throw new Exception("Invalid arguments");
@@ -43,66 +43,45 @@ public class KnowledgeGraph {
 		Node node;
 		try (Transaction tx = graphDb.beginTx()) {
 			// check for duplicate nodes
-			Node oldNode = getNode(token, pos, type);
+			Node oldNode = getNode(token, pos, type, sentId);
 			if (oldNode != null) {
-				return false;
+				// transaction complete
+				tx.success();
+				return oldNode;
 			}
-
+			
 			// Database operations go here
 			node = graphDb.createNode();
-			node.setProperty("entity", token);
-			if (pos != null) {
-				node.addLabel(DynamicLabel.label(pos));
-			}
-			if (type != null) {
-				node.addLabel(DynamicLabel.label(type));
-			}
+			node.setProperty("entity", token + ":" + pos + ":" + type);
+			node.addLabel(DynamicLabel.label(sentId));
 
 			// transaction complete
 			tx.success();
 		}
 
-		return true;
-	}
-
-	public int addTokens(List<String> tokens) throws Exception {
-		int count = 0;
-		for (String token : tokens) {
-			String parts[] = token.split("/");
-
-			boolean status = this.addNode(parts[3].toLowerCase(), parts[1], parts[2]);
-			if (status == true)
-				count++;
-		}
-		return count;
+		return node;
 	}
 	
-	public Node getNode(String token, String pos, String type) {
-//		Map<String, Object> params = new HashMap<String, Object>();
-//		params.put("otherLabels", Arrays.asList(type));
-//		String query = "MATCH (n:" + pos + ") WHERE ALL(x IN {otherLabels} WHERE x IN LABELS(n)) RETURN n";
-//		Result result = graphDb.execute(query, params);
-//		System.out.println(result.toString());
-		
-		// TODO : both labels to be used
-		Node node = graphDb.findNode(DynamicLabel.label(pos), "entity", token.toLowerCase());
+	private Node getNode(String token, String pos, String type, String sentId) {
+		Node node = graphDb.findNode(DynamicLabel.label(sentId), "entity", 
+				token + ":" + pos + ":" + type);
 		return node;
 	}
 
 	public boolean addRelation(String srcToken, String srcPos, String srcType, 
-			String dstToken, String dstPos, String dstType, String reln) {
+			String dstToken, String dstPos, String dstType, String reln, String sentId) {
 
 		if (srcToken == null || dstToken == null) {
 			return false;
 		}
 
 		try (Transaction tx = graphDb.beginTx()) {
-			Node srcNode = this.getNode(srcToken, srcPos, srcType);
+			Node srcNode = this.addNode(srcToken, srcPos, srcType, sentId);
 			if (srcNode == null) {
 				return false;
 			}
 
-			Node dstNode = this.getNode(dstToken, dstPos, dstType);
+			Node dstNode = this.addNode(dstToken, dstPos, dstType, sentId);
 			if (dstNode == null) {
 				return false;
 			}
@@ -164,6 +143,9 @@ public class KnowledgeGraph {
 
 			// transaction complete
 			tx.success();
+		} catch (Exception e) {
+			System.out.println("Error adding relationship");
+			e.printStackTrace();
 		}
 
 		return true;
@@ -187,7 +169,7 @@ public class KnowledgeGraph {
 		});
 	}
 
-	enum KRRelnTypes implements RelationshipType {
+	private enum KRRelnTypes implements RelationshipType {
 		ACOMP,
 		ADVMOD,
 		AMOD,

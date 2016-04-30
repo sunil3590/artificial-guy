@@ -86,8 +86,10 @@ public class NLP {
 				String ne = token.get(NamedEntityTagAnnotation.class);
 				// this is the lemma of the token
 				String lemma = token.get(LemmaAnnotation.class);
+				// this is the sentence index
+				int sentId = token.get(SentenceIndexAnnotation.class);
 
-				tagged.add(word + "/" + pos + "/" + ne + "/" + lemma);
+				tagged.add(word + "/" + pos + "/" + ne + "/" + lemma + "/" + sentId);
 			}
 
 		}
