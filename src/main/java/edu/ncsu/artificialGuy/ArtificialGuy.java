@@ -1,6 +1,7 @@
 package edu.ncsu.artificialGuy;
 
 import java.util.List;
+import java.util.Scanner;
 
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
@@ -56,8 +57,8 @@ public class ArtificialGuy {
 				String dstToken = edge.getTarget().lemma();
 				String srcPos = edge.getSource().tag();
 				String dstPos = edge.getTarget().tag();
-				String srcType = edge.getSource().ner();
-				String dstType = edge.getTarget().ner();
+				String srcNer = edge.getSource().ner();
+				String dstNer = edge.getTarget().ner();
 				String reln = edge.getRelation().getShortName();
 				
 				// TODO : figure out which POS make a node
@@ -66,7 +67,7 @@ public class ArtificialGuy {
 						&& (dstPos.matches("N.*") || dstPos.matches("V.*") || dstPos.matches("JJ.*")
 								|| dstPos.matches("RB.*"))) {
 					boolean status = false;
-					status = kr.addRelation(srcToken, srcPos, srcType, dstToken, dstPos, dstType, reln, Integer.toString(sentId));
+					status = kr.addRelation(srcToken, srcPos, srcNer, dstToken, dstPos, dstNer, reln, Integer.toString(sentId));
 					if (status == false) {
 						System.out.println("Failed to add relation - " + srcToken + "(" + srcPos + ")" + " - " + reln
 								+ " -> " + dstToken + "(" + dstPos + ")");
@@ -77,14 +78,24 @@ public class ArtificialGuy {
 			}
 			sentId++;
 		}
-
-		// TODO : question answering session
-
-		// terminate before exit
-		kr.terminate();
-
+		
 		System.out.println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUMMARY ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 		System.out.println("Number of relationships added : " + numEdges);
 		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+
+		// question answering session
+		Scanner sc = new Scanner(System.in);
+		while (true) {
+			// user question
+			System.out.print("Enter question (or \"quit\") > ");
+			String question = sc.nextLine();
+			if (question.equals("quit")) {
+				sc.close();
+				break;
+			}
+		}
+
+		// terminate before exit
+		kr.terminate();
 	}
 }

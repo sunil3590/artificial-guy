@@ -20,7 +20,7 @@ public class StoryProcessor {
 	//			stemming					DONE
 	//			dependency parse			DONE
 	//		Build KR
-	//			Remove stop words
+	//			Remove stop words			TODO
 	//			Nouns						DONE
 	//			Verbs						DONE
 	//			Relationships				DONE

@@ -7,6 +7,7 @@ import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
@@ -34,54 +35,61 @@ public class KnowledgeGraph {
 		registerShutdownHook(graphDb);
 	}
 
-	private Node addNode(String token, String pos, String type, String sentId) throws Exception {
+	private Node addNode(String token, String pos, String ner, String sentId) throws Exception {
 
-		if (token == null || pos == null || type == null) {
+		if (token == null || pos == null || ner == null) {
 			throw new Exception("Invalid arguments");
 		}
  
-		Node node;
+		// check for duplicate nodes
+		Node node = getNode(token, pos, ner, sentId);
+		if (node != null) {
+			return node;
+		}
+		
 		try (Transaction tx = graphDb.beginTx()) {
-			// check for duplicate nodes
-			Node oldNode = getNode(token, pos, type, sentId);
-			if (oldNode != null) {
-				// transaction complete
-				tx.success();
-				return oldNode;
-			}
-			
 			// Database operations go here
 			node = graphDb.createNode();
-			node.setProperty("entity", token + ":" + pos + ":" + type);
-			node.addLabel(DynamicLabel.label(sentId));
+			node.setProperty("token", token);
+			node.setProperty("pos", pos);
+			node.setProperty("ner", ner);
+			node.addLabel(DynamicLabel.label("S_" + sentId));
 
 			// transaction complete
 			tx.success();
 		}
-
+		
 		return node;
 	}
 	
-	private Node getNode(String token, String pos, String type, String sentId) {
-		Node node = graphDb.findNode(DynamicLabel.label(sentId), "entity", 
-				token + ":" + pos + ":" + type);
+	private Node getNode(String token, String pos, String ner, String sentId) {
+		Node node = null;
+
+		String query = "MATCH (entity:" + "S_" + sentId + 
+				" { token:'" + token + "' , pos:'" + pos + "' , ner:'" + ner + "' })"
+						+ " RETURN entity";
+		Result result = graphDb.execute(query);
+		while (result.hasNext()) {
+			node = (Node) result.next().get("entity");
+		}
+
 		return node;
 	}
 
-	public boolean addRelation(String srcToken, String srcPos, String srcType, 
-			String dstToken, String dstPos, String dstType, String reln, String sentId) {
+	public boolean addRelation(String srcToken, String srcPos, String srcNer, 
+			String dstToken, String dstPos, String dstNer, String reln, String sentId) {
 
 		if (srcToken == null || dstToken == null) {
 			return false;
 		}
 
 		try (Transaction tx = graphDb.beginTx()) {
-			Node srcNode = this.addNode(srcToken, srcPos, srcType, sentId);
+			Node srcNode = this.addNode(srcToken, srcPos, srcNer, sentId);
 			if (srcNode == null) {
 				return false;
 			}
 
-			Node dstNode = this.addNode(dstToken, dstPos, dstType, sentId);
+			Node dstNode = this.addNode(dstToken, dstPos, dstNer, sentId);
 			if (dstNode == null) {
 				return false;
 			}
