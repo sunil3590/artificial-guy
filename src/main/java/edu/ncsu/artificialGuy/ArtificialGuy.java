@@ -20,7 +20,6 @@ public class ArtificialGuy {
 	//			stemming					DONE
 	//			dependency parse			DONE
 	//		Build KR
-	//			Remove stop words			TODO
 	//			Nouns						DONE
 	//			Verbs						DONE
 	//			Relationships				DONE
@@ -28,8 +27,8 @@ public class ArtificialGuy {
 	// post mid-term
 	// Q/A
 	//		Accept question					DONE
-	//		NLP								TODO
-	//		Query KR						TODO
+	//		NLP								DONE
+	//		Query KR						DONE
 	//		NLG								TODO
 	
 	public static void main(String[] args) throws Exception {
@@ -43,7 +42,7 @@ public class ArtificialGuy {
 		System.out.println("Parses a story using Stanford CoreNLP and builds a knowledge graph using Neo4J");
 		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
-		System.out.println("Using story file : " + args[0] + "\n");
+		System.out.println("Using story file : " + args[0]);
 		Path path = FileSystems.getDefault().getPath("input", "owl.txt");
 		File file = path.toFile();
 
@@ -72,6 +71,7 @@ public class ArtificialGuy {
 		// relationships to be added to KR
 		List<SemanticGraph> depGraphs = nlp.getDependencies(coRefText);
 
+		System.out.println("\n################## ADDING RELATIONSHIPS TO KR ####################");
 		// add relationships and nodes to KR
 		int numEdges = 0;
 		int sentId = 0;
@@ -88,15 +88,15 @@ public class ArtificialGuy {
 				
 				// TODO : figure out which POS make a node
 				// all types of nouns, verbs, adjectives, adverbs
-				if ((srcPos.matches("N.*") || srcPos.matches("V.*") || srcPos.matches("JJ.*") || srcPos.matches("RB.*"))
-						&& (dstPos.matches("N.*") || dstPos.matches("V.*") || dstPos.matches("JJ.*")
-								|| dstPos.matches("RB.*"))) {
+				if (srcPos.matches("(NN|VB|JJ|RB).*") && dstPos.matches("(NN|VB|JJ|RB).*")) {
 					boolean status = false;
 					status = kr.addRelation(srcToken, srcPos, srcNer, dstToken, dstPos, dstNer, reln, Integer.toString(sentId));
 					if (status == false) {
 						System.out.println("Failed to add relation - " + srcToken + "(" + srcPos + ")" + " - " + reln
 								+ " -> " + dstToken + "(" + dstPos + ")");
 					} else {
+						System.out.println(srcToken + "(" + srcPos + ")" + " - " + reln
+								+ " -> " + dstToken + "(" + dstPos + ")");
 						numEdges++;
 					}
 				}
@@ -104,25 +104,119 @@ public class ArtificialGuy {
 			sentId++;
 		}
 		
-		System.out.println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUMMARY ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUMMARY ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 		System.out.println("Number of relationships added : " + numEdges);
-		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 		// question answering session
 		Scanner sc = new Scanner(System.in);
 		while (true) {
 			// user question
-			System.out.print("Enter question (or \"quit\") > ");
+			System.out.print("\nAsk me a question (or say \"quit\") > ");
 			String question = sc.nextLine();
 			if (question.equals("quit")) {
 				sc.close();
 				break;
 			}
 			
+			// parse the question
+			List<SemanticGraph> qDepGraphs = nlp.getDependencies(question);
 			
+			// is the question too complex to answer?
+			if (qDepGraphs.size() > 1) {
+				System.out.println("I don't know");
+				continue;
+			}
+			
+			System.out.println(nlp.tagTokens(question));
+			System.out.println(qDepGraphs);
+			
+			// parts of the parsed question
+			String verb = null;
+			String subj = null;
+			String obj = null;
+			String questWord = null;
+			String questReln = null;
+			
+			// extract subj, verb, obj triplet from question
+			// and also the question word
+			SemanticGraph qDepGraph = qDepGraphs.get(0);
+			
+			// root verb
+			if (qDepGraph.getFirstRoot().tag().startsWith("VB")) {
+				if (!qDepGraph.getFirstRoot().lemma().matches("(be|do|have)")) {
+					verb = qDepGraph.getFirstRoot().lemma();
+				}
+			}
+			
+			Iterable<SemanticGraphEdge> edges = qDepGraph.edgeIterable();
+			for (SemanticGraphEdge edge : edges) {
+				String srcToken = edge.getSource().lemma();
+				String dstToken = edge.getTarget().lemma();
+				String srcPos = edge.getSource().tag();
+				String dstPos = edge.getTarget().tag();
+				String reln = edge.getRelation().getShortName();
+				
+				// question word
+				if (srcPos.startsWith("W")) {
+					questWord = srcToken;
+					questReln = reln;
+				} else if (dstPos.startsWith("W")) {
+					questWord = dstToken;
+					questReln = reln;
+				}
+				
+				// subj and obj
+				if (reln == "nsubj" && !dstPos.startsWith("W")) {
+					subj = dstToken;
+				} else if (reln == "dobj" && !dstPos.startsWith("W")) {
+					obj = dstToken;					
+				}
+			}
+			
+			// check if question word exists
+			if (questWord == null) {
+				System.out.println("Is this a question?");
+				continue;
+			}
+			
+			// prints
+			System.out.println("verb = " + verb);
+			System.out.println("subj = " + subj);
+			System.out.println("obj = " + obj);
+			System.out.println("questWord = " + questWord);
+			System.out.println("questReln = " + questReln);
+			
+			// ask the KR
+			List<String> answer = null;
+			if (verb == null) {
+				if (obj == null && questReln.equals("advmod")) {
+					answer = kr.getDesc(subj);
+				} else if (questReln.equals("nsubj")) {
+					answer = kr.getSubj(verb);
+				}
+			} else {
+				if (subj == null && obj == null) {
+					answer = kr.getSubj(verb);
+				} else if (obj == null) {
+					answer = kr.getObj(subj, verb);
+				} else if (subj == null) {
+					answer = kr.getSubj(verb, obj);	
+				}
+			}
+			
+			if (answer == null) {
+				System.out.println("I don't know");
+				continue;				
+			} else {
+				System.out.println(answer);
+			}
 		}
 
 		// terminate before exit
 		kr.terminate();
+		
+		// time to say bye
+		System.out.println("\nYour friendly bot, artificial-guy");
 	}
 }

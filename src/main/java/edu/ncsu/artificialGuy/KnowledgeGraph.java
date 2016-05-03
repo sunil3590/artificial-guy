@@ -2,6 +2,8 @@ package edu.ncsu.artificialGuy;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -106,8 +108,11 @@ public class KnowledgeGraph {
 			case "amod":
 				relnType = KRRelnTypes.AMOD;
 				break;
-			case "conj":
-				relnType = KRRelnTypes.CONJ;
+			case "csubj":
+				relnType = KRRelnTypes.CSUBJ;
+				break;
+			case "csubjpass":
+				relnType = KRRelnTypes.CSUBJPASS;
 				break;
 			case "dobj":
 				relnType = KRRelnTypes.DOBJ;
@@ -133,11 +138,11 @@ public class KnowledgeGraph {
 			case "pobj":
 				relnType = KRRelnTypes.POBJ;
 				break;
-			case "poss":
-				relnType = KRRelnTypes.POSS;
-				break;
 			case "rcmod":
 				relnType = KRRelnTypes.RCMOD;
+				break;
+			case "tmod":
+				relnType = KRRelnTypes.TMOD;
 				break;
 			case "xsubj":
 				relnType = KRRelnTypes.XSUBJ;
@@ -158,9 +163,246 @@ public class KnowledgeGraph {
 
 		return true;
 	}
+	
+	private List<String> queryKR(String match, String where, String ret) {
+		
+		if (match == null || ret == null) {
+			System.out.println("Invalid input to query");
+			return null;
+		}
+		
+		// query the KR
+		String query = match;
+		if (where != null) {
+			query += " " + where;
+		}
+		query += " " + ret;
+		System.out.println(query);
+		Result result = graphDb.execute(query);
+		
+		// if there was no result
+		if (result.hasNext() == false) {
+			return null;
+		}
+		
+		// process all rows of query result
+		List<String> answer = new ArrayList<String>();
+		while (result.hasNext()) {
+			Node node = (Node) result.next().get("answer");
+			try (Transaction tx = graphDb.beginTx()) {
+				String token = (String) node.getProperty("token");
+				if (!answer.contains(token)) {
+					answer.add(token);
+				}
+				tx.success();
+			}
+		}
+		
+		// return null if no description found
+		if (answer.size() == 0) {
+			answer = null;
+		}
+		
+		return answer;
+	}
+	/**
+	 * Returns words that describe the subj 
+	 * <p>
+	 * @param subj whose description is needed, not null
+	 * @return words that describe the subj, may be null
+	 */
+	public List<String> getDesc(String subj) {
+		
+		// check arguments
+		if (subj == null) {
+			return null;
+		}
+		
+		// convert the English question to Cypher query
+		String match = null;
+		String where = null;
+		String ret = null;
+		
+		// build the MATCH part of query
+		match = "MATCH ";
+		match += "({token:'" + subj + "'})";
+		match += "-[:ACOMP|:ADVMOD|:AMOD|:NMOD|:NPADVMOD|:RCMOD|:TMOD]-"; // TODO
+		match += "(answer)";
+		
+		// expected POS of the answer is the WHERE condition
+		where = "WHERE answer.pos STARTS WITH 'JJ' OR answer.pos STARTS WITH 'RB'";
+		
+		// what needs to be RETURNed from the query
+		ret = "RETURN answer";
+		
+		// query the KR
+		List<String> answer = queryKR(match, where, ret);
+		if (answer != null) {
+			return answer;
+		}
+		
+		// relaxed query
+		match = "MATCH ";
+		match += "({token:'" + subj + "'})";
+		match += "--";
+		match += "(answer)";
+		answer = queryKR(match, where, ret);
+		if (answer != null) {
+			return answer;
+		}
+		answer = queryKR(match, null, ret);
+		
+		return answer;
+	}
+	
+	/**
+	 * Returns subject for a verb 
+	 * <p>
+	 *
+	 * @return answer words for the question
+	 */	
+	public List<String> getSubj(String verb) {
+		
+		// check arguments
+		if (verb == null) {
+			return null;
+		}
+		
+		// convert the English question to Cypher query
+		String match = null;
+		String where = null;
+		String ret = null;
+		
+		// build the MATCH part of query
+		match = "MATCH ";
+		match += "(answer)";
+		match += "-[:CSUBJ|:CSUBJPASS|:NSUBJ|:NSUBJPASS|:XSUBJ]-"; // TODO
+		match += "({token:'" + verb + "'})";
+		
+		// expected POS of the answer is the WHERE condition
+		where = "WHERE answer.pos STARTS WITH 'NN'";
+		
+		// what needs to be RETURNed from the query
+		ret = "RETURN answer";
+		
+		// query the KR
+		List<String> answer = queryKR(match, where, ret);
+		if (answer != null) {
+			return answer;
+		}
+		
+		// relaxed query
+		match = "MATCH ";
+		match += "(answer)";
+		match += "--";
+		match += "({token:'" + verb + "'})";
+		answer = queryKR(match, where, ret);
+		if (answer != null) {
+			return answer;
+		}
+		answer = queryKR(match, null, ret);
+		
+		return answer;
+	}
+	
+	public List<String> getSubj(String verb, String obj) {
+		
+		// check arguments
+		if (verb == null || obj == null) {
+			return null;
+		}
+		
+		// convert the English question to Cypher query
+		String match = null;
+		String where = null;
+		String ret = null;
+		
+		// build the MATCH part of query
+		match = "MATCH ";
+		match += "(answer)";
+		match += "-[:CSUBJ|:CSUBJPASS|:NSUBJ|:NSUBJPASS|:XSUBJ]-"; // TODO
+		match += "({token:'" + verb + "'})";
+		match += "-[:DOBJ|:IOBJ|:POBJ]-"; // TODO
+		match += "({token:'" + obj + "'})";
+		
+		// expected POS of the answer is the WHERE condition
+		where = "WHERE answer.pos STARTS WITH 'NN'";
+		
+		// what needs to be RETURNed from the query
+		ret = "RETURN answer";
+		
+		// query the KR
+		List<String> answer = queryKR(match, where, ret);
+		if (answer != null) {
+			return answer;
+		}
+		
+		// relaxed query
+		match = "MATCH ";
+		match += "(answer)";
+		match += "--";
+		match += "({token:'" + verb + "'})";
+		match += "--";
+		match += "({token:'" + obj + "'})";
+		answer = queryKR(match, where, ret);
+		if (answer != null) {
+			return answer;
+		}
+		answer = queryKR(match, null, ret);
+		
+		return answer;
+	}
+	
+	public List<String> getObj(String subj, String verb) {
+		
+		// check arguments
+		if (subj == null || verb == null) {
+			return null;
+		}
+		
+		// convert the English question to Cypher query
+		String match = null;
+		String where = null;
+		String ret = null;
+		
+		// build the MATCH part of query
+		match = "MATCH ";
+		match += "({token:'" + subj + "'})";
+		match += "-[:CSUBJ|:CSUBJPASS|:NSUBJ|:NSUBJPASS|:XSUBJ]-"; // TODO
+		match += "({token:'" + verb + "'})";
+		match += "-[:DOBJ|:IOBJ|:POBJ]-"; // TODO
+		match += "(answer)";
+		
+		// expected POS of the answer is the WHERE condition
+		where = "WHERE answer.pos STARTS WITH 'NN'";
+		
+		// what needs to be RETURNed from the query
+		ret = "RETURN answer";
+		
+		// query the KR
+		List<String> answer = queryKR(match, where, ret);
+		if (answer != null) {
+			return answer;
+		}
+		
+		// relaxed query
+		match = "MATCH ";
+		match += "({token:'" + subj + "'})";
+		match += "--";
+		match += "({token:'" + verb + "'})";
+		match += "--";
+		match += "(answer)";
+		answer = queryKR(match, where, ret);
+		if (answer != null) {
+			return answer;
+		}
+		answer = queryKR(match, null, ret);
+		
+		return answer;
+	}
 
 	public void terminate() {
-		System.out.println("Shutting down database ...");
+		System.out.println("\nShutting down database ...");
 		graphDb.shutdown();
 	}
 
@@ -180,7 +422,8 @@ public class KnowledgeGraph {
 		ACOMP,
 		ADVMOD,
 		AMOD,
-		CONJ,
+		CSUBJ,
+		CSUBJPASS,
 		DOBJ,
 		IOBJ,
 		NEG,
@@ -189,8 +432,8 @@ public class KnowledgeGraph {
 		NSUBJ,
 		NSUBJPASS,
 		POBJ,
-		POSS,
 		RCMOD,
+		TMOD,
 		XSUBJ,
 		UNKNOWN
 	}
