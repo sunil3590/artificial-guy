@@ -43,7 +43,7 @@ public class ArtificialGuy {
 		System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 
 		System.out.println("Using story file : " + args[0]);
-		Path path = FileSystems.getDefault().getPath("input", "owl.txt");
+		Path path = FileSystems.getDefault().getPath("input", args[0]);
 		File file = path.toFile();
 
 		// build a Story object
@@ -92,11 +92,11 @@ public class ArtificialGuy {
 					boolean status = false;
 					status = kr.addRelation(srcToken, srcPos, srcNer, dstToken, dstPos, dstNer, reln, Integer.toString(sentId));
 					if (status == false) {
-						System.out.println("Failed to add relation - " + srcToken + "(" + srcPos + ")" + " - " + reln
-								+ " -> " + dstToken + "(" + dstPos + ")");
+						System.out.println("Failed to add relation - " + srcToken + "(" + srcPos + ")" + " -" + reln
+								+ "-> " + dstToken + "(" + dstPos + ")");
 					} else {
-						System.out.println(srcToken + "(" + srcPos + ")" + " - " + reln
-								+ " -> " + dstToken + "(" + dstPos + ")");
+						System.out.println(srcToken + "(" + srcPos + ")" + " -" + reln
+								+ "-> " + dstToken + "(" + dstPos + ")");
 						numEdges++;
 					}
 				}
@@ -112,7 +112,7 @@ public class ArtificialGuy {
 		Scanner sc = new Scanner(System.in);
 		while (true) {
 			// user question
-			System.out.print("\nAsk me a question (or say \"quit\") > ");
+			System.out.print("\n*** Question (\"quit\") > ");
 			String question = sc.nextLine();
 			if (question.equals("quit")) {
 				sc.close();
@@ -124,11 +124,10 @@ public class ArtificialGuy {
 			
 			// is the question too complex to answer?
 			if (qDepGraphs.size() > 1) {
-				System.out.println("I don't know");
+				System.out.println("*** I don't know");
 				continue;
 			}
 			
-			System.out.println(nlp.tagTokens(question));
 			System.out.println(qDepGraphs);
 			
 			// parts of the parsed question
@@ -176,24 +175,23 @@ public class ArtificialGuy {
 			
 			// check if question word exists
 			if (questWord == null) {
-				System.out.println("Is this a question?");
+				System.out.println("*** Is this a question?");
 				continue;
 			}
 			
 			// prints
-			System.out.println("verb = " + verb);
-			System.out.println("subj = " + subj);
-			System.out.println("obj = " + obj);
-			System.out.println("questWord = " + questWord);
+			System.out.print("verb = " + verb + ", ");
+			System.out.print("subj = " + subj + ", ");
+			System.out.print("obj = " + obj + ", ");
+			System.out.print("questWord = " + questWord + ", ");
 			System.out.println("questReln = " + questReln);
 			
 			// ask the KR
+			// TODO : there has to be a cleaner way to do this
 			List<String> answer = null;
 			if (verb == null) {
 				if (obj == null && questReln.equals("advmod")) {
 					answer = kr.getDesc(subj);
-				} else if (questReln.equals("nsubj")) {
-					answer = kr.getSubj(verb);
 				}
 			} else {
 				if (subj == null && obj == null) {
@@ -206,10 +204,10 @@ public class ArtificialGuy {
 			}
 			
 			if (answer == null) {
-				System.out.println("I don't know");
+				System.out.println("*** I don't know");
 				continue;				
 			} else {
-				System.out.println(answer);
+				System.out.println("*** Answer > " + answer);
 			}
 		}
 
@@ -217,6 +215,9 @@ public class ArtificialGuy {
 		kr.terminate();
 		
 		// time to say bye
-		System.out.println("\nYour friendly bot, artificial-guy");
+		System.out.println("\nTo visualize the knowledge graph :");
+		System.out.println("		./neo4j console");
+		System.out.println("		http://localhost:7474/");
+		System.out.println("\nYour friendly bot, artificial-guy\n");
 	}
 }

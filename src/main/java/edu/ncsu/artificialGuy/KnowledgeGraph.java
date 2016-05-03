@@ -177,7 +177,6 @@ public class KnowledgeGraph {
 			query += " " + where;
 		}
 		query += " " + ret;
-		System.out.println(query);
 		Result result = graphDb.execute(query);
 		
 		// if there was no result
