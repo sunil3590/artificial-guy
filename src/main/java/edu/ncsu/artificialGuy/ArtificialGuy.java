@@ -128,8 +128,6 @@ public class ArtificialGuy {
 				continue;
 			}
 			
-			System.out.println(qDepGraphs);
-			
 			// parts of the parsed question
 			String verb = null;
 			String subj = null;
@@ -178,13 +176,6 @@ public class ArtificialGuy {
 				System.out.println("*** Is this a question?");
 				continue;
 			}
-			
-			// prints
-			System.out.print("verb = " + verb + ", ");
-			System.out.print("subj = " + subj + ", ");
-			System.out.print("obj = " + obj + ", ");
-			System.out.print("questWord = " + questWord + ", ");
-			System.out.println("questReln = " + questReln);
 			
 			// ask the KR
 			// TODO : there has to be a cleaner way to do this
